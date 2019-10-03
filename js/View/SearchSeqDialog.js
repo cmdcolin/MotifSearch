@@ -34,7 +34,7 @@ return declare( ActionBarDialog, {
         });
     },
 
-    _dialogContent: function () {
+    async _dialogContent () {
         var content = this.content = {};
 
         var container = dom.create('div', { className: 'search-dialog' } );
@@ -52,20 +52,16 @@ return declare( ActionBarDialog, {
 
         //pull in matrices from an external json file
         //content.matrices =  JSON.parse( motifData );
-        dojo.xhrGet({
-            url: "/tools/genome/jbrowse/plugins/MotifSearch/js/View/sample_motifs.json",
-            handleAs: "json",
-            load: function(obj) {
-                  /* here, obj will already be a JS object deserialized from the JSON response */
-                  console.log(obj.matrices);
-                  content.matrices = obj.matrices;
-            },
-            error: function(err) {
-                console.log('the motif file couldnt be loaded'); 
-            }
-        });
-
-        console.log(content.matrices);
+        this.set( 'content', 'Loading...' );
+        try {
+            const res = await fetch("jbrowse_conf.json")
+            const obj = await res.json()
+            content = obj;
+        } catch(e) {
+            console.error('Error',e);
+            this.set( 'content', 'Error: '+e );
+            return
+        }
 
         content.matrixbutton = [];
 
@@ -103,7 +99,7 @@ return declare( ActionBarDialog, {
         var helpText1 = '<ul><li>Min score is the minimum percent match to the matrix.<li>Custom matrices require a name. Each row of the matrix in order A, C, G, T with one or more spaces between elements.</ul>';
         var helpText2 = '<ul><li>To see a track\'s matrix, check the track label\'s drop down menu.<li>Matrix search tracks do not survive page reloads.</ul>';
 
-        var helpTextContainer1 = dom.create('div', {name:'helptext1', innerHTML: helpText1, style:{position: 'relative'}}, radiocolone); 
+        var helpTextContainer1 = dom.create('div', {name:'helptext1', innerHTML: helpText1, style:{position: 'relative'}}, radiocolone);
         var helpTextContainer2 = dom.create('div', {name:'helptext2', innerHTML: helpText2, style:{position: 'relative'}}, radiocoltwo);
 
         //minscoreDiv.appendChild(content.minscorefield.domNode);
@@ -122,8 +118,7 @@ return declare( ActionBarDialog, {
         content.custommatrixgfield    = new dTextBox( {name: 'custommatrixg',style: 'width: 15em;',placeholder:'G:0 0 12 0...'}, customMatrixGDiv);
         content.custommatrixtfield    = new dTextBox( {name: 'custommatrixt',style: 'width: 15em;',placeholder:'T:0 0 0 2...'}, customMatrixTDiv);
 
-
-        return container;
+         this.set( 'content', content );
     },
 
     _getSearchParams: function() {
@@ -235,7 +230,7 @@ return declare( ActionBarDialog, {
     show: function ( callback ) {
         this.callback = callback || function() {};
         this.set( 'title', "Add motif search track");
-        this.set( 'content', this._dialogContent() );
+        this._dialogContent()
         this.inherited( arguments );
         focus.focus( this.closeButtonNode );
     }
